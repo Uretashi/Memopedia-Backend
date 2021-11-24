@@ -18,7 +18,7 @@ export class AccountService {
      * @param {UserDTO} user -> the new account data
      * @return Promise<number> -> new account id (for validation)
      */
-    async createUserAccount(user: UserDTO): Promise<number> {
+    async createUserAccount(user: UserDTO): Promise<number | null> {
 
         // insert into the "user" table the new account
         const createAccount =  await this.usersEntityRepository

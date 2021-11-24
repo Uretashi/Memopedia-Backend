@@ -1,9 +1,7 @@
 import { IsString, IsNotEmpty, IsDate, IsNumber } from "class-validator";
+import { Type } from "class-transformer";
 
 export class MemeDTO {
-
-    @IsNumber()
-    id?: number;
 
     @IsString()
     @IsNotEmpty()
@@ -23,6 +21,7 @@ export class MemeDTO {
 
     @IsDate()
     @IsNotEmpty()
+    @Type(() => Date)
     publication_date: Date;
 
     @IsNumber()
