@@ -1,7 +1,12 @@
 import { IsString, IsNotEmpty, IsDate, IsNumber } from "class-validator";
 import { Type } from "class-transformer";
 
+
 export class MemeDTO {
+
+    fileBuffer64?: string;
+
+    id_meme?: number;
 
     @IsString()
     @IsNotEmpty()
@@ -26,9 +31,11 @@ export class MemeDTO {
 
     @IsNumber()
     @IsNotEmpty()
+    @Type(() => Number)
     like_nb: number;
 
     @IsNumber()
     @IsNotEmpty()
+    @Type(() => Number)
     author_id: number;
 }

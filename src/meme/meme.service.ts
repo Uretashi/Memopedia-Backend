@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Meme } from "../utils/entities/meme.entity";
 import { MemeDTO } from "../utils/dto/meme.dto";
+import { readFileSync } from "fs";
 
 @Injectable()
 export class MemeService {
@@ -16,10 +17,24 @@ export class MemeService {
      * find meme that match the id parameter
      *
      * @param {number} id -> the searched meme id
-     * @return Promise<Meme> -> founded meme for the given id
+     * @return Promise<MemeDTO> -> founded meme for the given id
      */
-    async getOneMeme(id: number): Promise<Meme | null> {
-        return await this.memesEntityRepository.findOne({ where: { id_meme: id } });
+    async getOneMeme(id: number): Promise<MemeDTO | null> {
+        // query
+        const meme = await this.memesEntityRepository.findOne({ where: { id_meme: id } });
+
+        // read the buffer of the associated image, and create a base64 stream for the render
+        if(meme) {
+            // cast Meme to MemeDTO
+            const memeDto = meme as MemeDTO;
+            // buffer encoded in base64
+            const base64buffer = readFileSync(`./meme/${meme.url}`).toString('base64');
+            // ready html source for the image/video
+            memeDto.fileBuffer64 = `data:image/${meme.url.split('.')[1]};base64,${base64buffer}`;
+            return memeDto;
+        }
+
+        return null;
     }
 
     /**
@@ -38,9 +53,9 @@ export class MemeService {
     /**
      * get 5 random memes
      *
-     * @return Promise<Meme[}> -> random memes
+     * @return Promise<MemeDTO[]> -> random memes
      */
-    async getRandomMemes(): Promise<Meme[] | null> {
+    async getRandomMemes(): Promise<MemeDTO[] | null> {
         //get the last table entry for the id
         const lastMeme = await this.memesEntityRepository.findOne({order: { id_meme: 'DESC' }});
 
@@ -56,10 +71,28 @@ export class MemeService {
         }
 
         //return memes that have one of the random id
-        return await this.memesEntityRepository
+        const memes = await this.memesEntityRepository
             .createQueryBuilder()
             .where('id_meme IN (:ids)', { ids: randomMemeId })
             .getMany();
+
+        // if memes found
+        if(memes) {
+            // for each meme, read the buffer of the associated image, and create a base64 stream for the render
+            memes.map((meme: MemeDTO) => {
+                // buffer encoded in base64
+                const base64buffer = readFileSync(`./meme/${meme.url}`).toString('base64');
+                // type of source ("video" if mp4, image otherwise)
+                const type = meme.url.split('.')[1] === 'mp4' ? 'video' : 'image';
+
+                // ready html source for the image/video
+                meme.fileBuffer64 = `data:${type}/${meme.url.split('.')[1]};base64,${base64buffer}`;
+            });
+
+            return memes;
+        }
+
+        return null;
     }
 
     /**

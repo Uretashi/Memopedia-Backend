@@ -6,13 +6,16 @@ import {
     Param,
     ParseArrayPipe,
     ParseIntPipe,
-    Post, Query,
+    Post, Query, UploadedFile, UseInterceptors,
     UsePipes,
     ValidationPipe
 } from '@nestjs/common';
-import {MemeService} from "./meme.service";
-import {MemeDTO} from "../utils/dto/meme.dto";
-import {Meme} from "../utils/entities/meme.entity";
+import { MemeService } from "./meme.service";
+import { MemeDTO } from "../utils/dto/meme.dto";
+import { Meme } from "../utils/entities/meme.entity";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { writeFile } from "fs";
+
 
 @Controller('memes')
 export class MemeController {
@@ -44,7 +47,7 @@ export class MemeController {
         return this._memeService.getOneMeme(id).then((meme: Meme) => {
             return meme ?
                 { res: meme, msg: 'meme found', status: HttpStatus.FOUND } :
-                { msg: `no meme found for the given id : ${id}`, status: HttpStatus.NOT_FOUND }
+                { msg: `no meme found for the given id : ${id}`, status: HttpStatus.NOT_FOUND };
         });
     }
 
@@ -69,11 +72,18 @@ export class MemeController {
      * add a new meme to the DB
      *
      * @param {MemeDTO} meme -> new meme to insert
+     * @param {any} file
      * @return Object -> the new created mem, or error
      */
     @Post('/postMeme')
+    @UseInterceptors(FileInterceptor('file'))
     @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
-    postNewMeme(@Body() meme: MemeDTO): object {
+    postNewMeme(@UploadedFile() file: any, @Body() meme: MemeDTO): object {
+
+        writeFile(`./meme/${file.originalname}`, file.buffer, (err) => {
+            if (err) throw err;
+        });
+
         return this._memeService.postNewMeme(meme).then((newMemeId: number) => {
             return newMemeId ?
                 { res: newMemeId, msg: 'New meme added hehehehehe', status: HttpStatus.CREATED } :
